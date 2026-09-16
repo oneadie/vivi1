@@ -69,6 +69,8 @@ body::after{content:'';position:fixed;inset:0;z-index:1;pointer-events:none;
 .photo-item.show{opacity:1;transform:scale(1) rotate(var(--rot,0deg));}
 #ph15{transition:opacity .5s cubic-bezier(.2,0,.2,1),transform .5s cubic-bezier(.17,.89,.32,1.35) !important;}
 .photo-item.float{animation:photoFloat 4s ease-in-out infinite;}
+.photo-item.fly{transform:scale(5) !important;opacity:0 !important;
+  transition:transform .8s cubic-bezier(.3,0,.7,1),opacity .6s ease !important;pointer-events:none;z-index:40;}
 .photo-item img{width:100%;height:100%;object-fit:cover;display:block;}
 @keyframes photoFloat{0%,100%{transform:scale(1) rotate(var(--rot,0deg)) translateY(0)}
   50%{transform:scale(1) rotate(var(--rot,0deg)) translateY(-4px)}}
@@ -79,6 +81,16 @@ body::after{content:'';position:fixed;inset:0;z-index:1;pointer-events:none;
   font-family:'Great Vibes',cursive;font-size:clamp(.7rem,1.8vw,1.3rem);
   color:#fff;text-shadow:0 0 10px rgba(255,45,85,.9),0 0 20px rgba(255,45,85,.5);
   opacity:0;animation:fadeIn .5s ease forwards;}
+
+/* blurred love fill */
+.heart-love-fill{position:absolute;font-family:'Great Vibes',cursive;color:#ff2d55;white-space:nowrap;
+  pointer-events:none;z-index:4;opacity:0;
+  text-shadow:0 0 20px rgba(255,45,85,.8),0 0 40px rgba(255,45,85,.4);
+  animation:loveFillCycle 2.5s ease forwards;}
+@keyframes loveFillCycle{0%{opacity:0;transform:translate(-50%,-50%) scale(.5)}
+  25%{opacity:.8;transform:translate(-50%,-50%) scale(1)}
+  75%{opacity:.7;transform:translate(-50%,-50%) scale(1.05)}
+  100%{opacity:0;transform:translate(-50%,-50%) scale(1.15)}}
 
 /* neon from heart */
 .neon-love{position:fixed;font-family:'Great Vibes',cursive;pointer-events:none;z-index:25;
@@ -183,26 +195,26 @@ body::after{content:'';position:fixed;inset:0;z-index:1;pointer-events:none;
 
 <script>
 const HEART_N=48, HT_START=3200, HT_INT=140;
-const PH_START=9500, PH_INT=1000, PH15_EXTRA=0;
-const LOVE_PH=25000, FIN_START=28000, TXT_START=36000, REP_START=52000;
+const PH_START=9500, PH_INT=400, PH15_EXTRA=0;
+const LOVE_PH=17000, FIN_START=20000, TXT_START=30000, REP_START=52000;
 
 /* photos: safe positions, bigger, overlapping */
 const PL=[
-  {l:14,t:20,w:22,h:15,r:-3},   // 1 left bump (moved down)
-  {l:64,t:20,w:22,h:15,r:3},    // 2 right bump (moved down)
-  {l:4, t:32,w:22,h:15,r:-2},   // 3
-  {l:34,t:30,w:24,h:17,r:0},    // 4
-  {l:72,t:32,w:22,h:15,r:2},    // 5
-  {l:8, t:46,w:21,h:14,r:3},    // 6
-  {l:30,t:44,w:19,h:13,r:-2},   // 7
-  {l:52,t:44,w:19,h:13,r:2},    // 8
-  {l:70,t:46,w:20,h:14,r:-3},   // 9
-  {l:18,t:58,w:18,h:13,r:2},    // 10
-  {l:40,t:56,w:18,h:13,r:-1},   // 11
-  {l:60,t:58,w:18,h:13,r:-2},   // 12
-  {l:30,t:68,w:16,h:11,r:1},    // 13
-  {l:52,t:68,w:16,h:11,r:-1},   // 14
-  {l:28,t:36,w:44,h:28,r:0},    // 15
+  {l:15,t:18,w:22,h:15,r:-3},   // 1 left bump
+  {l:63,t:18,w:22,h:15,r:3},    // 2 right bump
+  {l:10,t:30,w:22,h:15,r:-2},   // 3 moved in
+  {l:34,t:27,w:24,h:17,r:0},    // 4
+  {l:68,t:30,w:22,h:15,r:2},    // 5 moved in
+  {l:14,t:43,w:20,h:14,r:3},    // 6 moved in
+  {l:30,t:41,w:19,h:13,r:-2},   // 7
+  {l:52,t:41,w:19,h:13,r:2},    // 8
+  {l:66,t:43,w:20,h:14,r:-3},   // 9 moved in
+  {l:20,t:55,w:18,h:13,r:2},    // 10
+  {l:40,t:53,w:18,h:13,r:-1},   // 11
+  {l:60,t:55,w:18,h:13,r:-2},   // 12
+  {l:31,t:65,w:16,h:11,r:1},    // 13
+  {l:53,t:65,w:16,h:11,r:-1},   // 14
+  {l:28,t:33,w:44,h:28,r:0},    // 15
 ];
 
 let on=false;const music=document.getElementById('music');
@@ -241,28 +253,6 @@ function tick(){
   if(Math.random()<.06)ap('heart');
   if(spkOn&&Math.random()<spkR)ap('sparkle',Math.random()*cvs.width,Math.random()*cvs.height);
   if(on&&Math.random()<.3)ap('sparkle',mx+(Math.random()-.5)*25,my+(Math.random()-.5)*25);
-  // canvas heart trace
-  if(tracing&&tracePts.length>1){
-    const n=Math.floor(traceP*tracePts.length);
-    if(n>1){
-      ctx.save();ctx.strokeStyle='#ff2d55';ctx.lineWidth=2.5;ctx.lineCap='round';
-      ctx.shadowBlur=25;ctx.shadowColor='rgba(255,45,85,.8)';ctx.globalAlpha=.85;
-      ctx.beginPath();ctx.moveTo(tracePts[0].x,tracePts[0].y);
-      for(let i=1;i<n;i++)ctx.lineTo(tracePts[i].x,tracePts[i].y);
-      ctx.stroke();
-      // bright dot at tip
-      const tip=tracePts[Math.min(n,tracePts.length-1)];
-      ctx.fillStyle='#fff';ctx.shadowBlur=35;ctx.shadowColor='#ff6b9d';ctx.globalAlpha=1;
-      ctx.beginPath();ctx.arc(tip.x,tip.y,4,0,6.28);ctx.fill();
-      ctx.restore();
-    }
-    if(traceP<1)traceP+=.006;
-    else if(!traceExploded){traceExploded=true;
-      tracePts.forEach(p=>{const dx=p.x-cvs.width/2,dy=p.y-cvs.height/2,d=Math.sqrt(dx*dx+dy*dy)||1;
-        pts.push({t:'heart',x:p.x,y:p.y,vx:dx/d*(2+Math.random()*3),vy:dy/d*(2+Math.random()*3),
-          sz:Math.random()*6+3,op:.9,rot:0,rs:(Math.random()-.5)*.06,life:1,decay:.008,hue:Math.random()*40+330});
-      });tracing=false;tracePts=[];}
-  }
   for(let i=pts.length-1;i>=0;i--){
     const p=pts[i];p.x+=p.vx;p.y+=p.vy;p.rot+=p.rs;p.life-=p.decay;p.vx+=(Math.random()-.5)*.08;
     if(p.life<=0||p.y<-30){pts.splice(i,1);continue;}
@@ -280,17 +270,6 @@ function tick(){
     ctx.restore();
   }
   requestAnimationFrame(tick);
-}
-// trace state
-let tracing=false,tracePts=[],traceP=0,traceExploded=false;
-function startTrace(){
-  tracing=true;traceP=0;traceExploded=false;tracePts=[];
-  const cx=cvs.width/2,cy=cvs.height/2,sc=Math.min(cvs.width,cvs.height)*.014;
-  for(let i=0;i<=120;i++){
-    const t=(i/120)*Math.PI*2;
-    tracePts.push({x:cx+16*Math.pow(Math.sin(t),3)*sc,
-      y:cy-(13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t))*sc});
-  }
 }
 tick();
 
@@ -397,49 +376,113 @@ function go(){
     for(let j=0;j<8;j++)ap('sparkle',r.left+r.width/2+(Math.random()-.5)*60,r.top+r.height/2+(Math.random()-.5)*60);
   },PH_START+14*PH_INT+PH15_EXTRA);
 
-  // 24s: love on photos, accelerating
-  s(()=>{let d=0;for(let i=0;i<15;i++){d+=Math.max(100,450-i*25);
+  // 17s: love on photos, FAST
+  s(()=>{let d=0;for(let i=0;i<15;i++){d+=Math.max(40,160-i*10);
     s(()=>{const p=document.getElementById('ph'+(i+1));if(!p)return;
       const o=document.createElement('div');o.className='photo-love';o.textContent='I love you';p.appendChild(o);
     },d);}
   },LOVE_PH);
 
-  // 28s: FINALE EFFECTS
+  // 16s: PHOTO RIPPLE WAVE
   s(()=>{
-    // gentle pulse
+    for(let i=0;i<15;i++){
+      s(()=>{
+        const p=document.getElementById('ph'+(i+1));if(!p)return;
+        p.style.transition='transform .3s ease';
+        p.style.transform=`scale(1.15) rotate(${PL[i].r}deg)`;
+        p.style.boxShadow='0 0 30px rgba(255,45,85,.6)';
+        setTimeout(()=>{
+          p.style.transform=`scale(1) rotate(${PL[i].r}deg)`;
+          p.style.boxShadow='';
+          p.style.transition='';
+        },300);
+      },i*120);
+    }
+  },16000);
+
+  // 19s: PHOTOS FLY TOWARD CAMERA — reparent to body so they escape heart clip
+  s(()=>{
+    const order=[0,1,2,4,3,5,8,6,7,9,11,10,12,13,14];
+    order.forEach((idx,i)=>{
+      s(()=>{
+        const p=document.getElementById('ph'+(idx+1));if(!p)return;
+        const r=p.getBoundingClientRect();
+        // sparkle burst
+        for(let j=0;j<8;j++)ap('sparkle',r.left+r.width/2+(Math.random()-.5)*80,r.top+r.height/2+(Math.random()-.5)*80);
+        // reparent to body at same screen position
+        p.style.position='fixed';
+        p.style.left=r.left+'px';p.style.top=r.top+'px';
+        p.style.width=r.width+'px';p.style.height=r.height+'px';
+        p.style.margin='0';p.style.zIndex='40';
+        document.body.appendChild(p);
+        p.offsetHeight; // force reflow
+        p.classList.add('fly');
+        setTimeout(()=>p.remove(),1200);
+      },i*180);
+    });
+  },19000);
+
+  // 20s: FINALE EFFECTS
+  s(()=>{
     const hw=document.getElementById('heart-wrap');let ph=0;
     const pi=setInterval(()=>{ph+=.012;hw.style.transform=`scale(${1+Math.sin(ph)*.05})`;},16);I.push(pi);
-    // glow
     document.getElementById('glow').classList.add('show');
-    // sparkles
     spkOn=true;spkR=.3;
-    // neons — fast, lots of them
     const ni=setInterval(neon,160);I.push(ni);
-    // petals
     const pI=setInterval(petal,220);I.push(pI);
   },FIN_START);
 
-  // 30s: color wave on heart texts
+  // 22s: color wave on heart texts
   s(()=>{
     const els=document.querySelectorAll('.heart-text.show');
     els.forEach((e,i)=>{e.style.animationDelay=(i*.08)+'s';e.classList.add('wave');});
-  },30000);
+  },22000);
 
-  // 31s: photos float gently
+  // 22s: CONTINUOUS LOVE FILL inside heart (appear & disappear)
   s(()=>{
-    document.querySelectorAll('.photo-item.show').forEach(p=>p.classList.add('float'));
-  },31000);
+    const c=document.getElementById('heart-texts');
+    const ph=['I love you','I ♥ U','Te amo','Люблю','Je t\'aime','Forever'];
+    const hw=document.getElementById('heart-wrap');
+    const fi=setInterval(()=>{
+      const el=document.createElement('span');el.className='heart-love-fill';
+      el.textContent=ph[Math.floor(Math.random()*ph.length)];
+      const sz=Math.random()*1.6+1.2;
+      const blur=Math.random()*1+.5;
+      // position inside heart using parametric curve check
+      const W=hw.offsetWidth,H=hw.offsetHeight,sc=W/36,cx=W/2,cy=H*.44;
+      const t=Math.random()*Math.PI*2;
+      const r=Math.random()*.65+.1;
+      const hx=16*Math.pow(Math.sin(t),3)*r,hy=-(13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t))*r;
+      const x=cx+hx*sc,y=cy+hy*sc;
+      el.style.cssText=`left:${x}px;top:${y}px;font-size:${sz}rem;filter:blur(${blur}px);`;
+      c.appendChild(el);
+      setTimeout(()=>el.remove(),2600);
+    },100);I.push(fi);
+  },22000);
 
-  // 32s: glow intensifies + stars
-  s(()=>{document.getElementById('glow').classList.add('intense');stars(50);},32000);
+  // 24s: glow intensifies + stars
+  s(()=>{document.getElementById('glow').classList.add('intense');stars(50);},24000);
 
-  // 34s: extra sparkle burst
-  s(()=>{spkR=.6;for(let i=0;i<30;i++)ap('sparkle',Math.random()*cvs.width,Math.random()*cvs.height);},34000);
+  // 26s: extra sparkle burst
+  s(()=>{spkR=.6;for(let i=0;i<30;i++)ap('sparkle',Math.random()*cvs.width,Math.random()*cvs.height);},26000);
 
-  // 36s: Russian text + SVG heart drawing around it
+  // 27s: heart particle burst (replaces laggy canvas trace)
+  s(()=>{
+    const cx=cvs.width/2,cy=cvs.height/2;
+    for(let i=0;i<80;i++){
+      const ang=(i/80)*Math.PI*2;
+      const hx=16*Math.pow(Math.sin(ang),3);
+      const hy=-(13*Math.cos(ang)-5*Math.cos(2*ang)-2*Math.cos(3*ang)-Math.cos(4*ang));
+      pts.push({t:'heart',x:cx,y:cy,vx:hx*.6,vy:hy*.6,
+        sz:Math.random()*7+4,op:.9,rot:0,rs:(Math.random()-.5)*.04,
+        life:1,decay:.004,hue:Math.random()*40+330});
+    }
+    for(let i=0;i<30;i++)ap('sparkle',cx+(Math.random()-.5)*150,cy+(Math.random()-.5)*150);
+  },27000);
+
+  // 30s: Russian text + SVG heart drawing around it
   s(()=>{
     const f=document.getElementById('finale');f.classList.add('show');
-    // trigger SVG heart line draw
     s(()=>document.querySelector('.draw-heart').classList.add('animate'),300);
     s(()=>document.getElementById('fl1').classList.add('show'),600);
     s(()=>document.getElementById('fl2').classList.add('show'),2500);
@@ -447,14 +490,10 @@ function go(){
     s(()=>document.getElementById('fl4').classList.add('show'),6500);
   },TXT_START);
 
-  // 33s: canvas heart TRACE (draws itself, then explodes)
-  s(()=>startTrace(),33000);
-
-  // 44s: extra sparkle + petal burst
+  // 38s: extra sparkle + petal burst + heart particle burst
   s(()=>{
     for(let i=0;i<50;i++)ap('sparkle',Math.random()*cvs.width,Math.random()*cvs.height);
     for(let i=0;i<12;i++)petal();
-    // third heart burst
     const cx=cvs.width/2,cy=cvs.height/2;
     for(let i=0;i<30;i++){
       const ang=(i/30)*Math.PI*2;
@@ -464,6 +503,12 @@ function go(){
         sz:Math.random()*6+3,op:.7,rot:0,rs:(Math.random()-.5)*.05,
         life:1,decay:.005,hue:Math.random()*50+320});
     }
+  },38000);
+
+  // 44s: another burst
+  s(()=>{
+    for(let i=0;i<40;i++)ap('sparkle',Math.random()*cvs.width,Math.random()*cvs.height);
+    for(let i=0;i<10;i++)petal();
   },44000);
 
   // 48s: dim sparkles
@@ -492,8 +537,7 @@ function go(){
 function restart(){
   T.forEach(t=>clearTimeout(t));T.length=0;
   I.forEach(i=>clearInterval(i));I.length=0;
-  on=false;spkOn=false;spkR=0;music.pause();music.currentTime=0;music.volume=1;
-  tracing=false;tracePts=[];traceP=0;traceExploded=false;pts=[];
+  on=false;spkOn=false;spkR=0;music.pause();music.currentTime=0;music.volume=1;pts=[];
   document.getElementById('heart-texts').innerHTML='';
   document.getElementById('photo-container').innerHTML='';
   document.querySelectorAll('.petal,.neon-love,.twinkle').forEach(e=>e.remove());
