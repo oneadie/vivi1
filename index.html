@@ -71,26 +71,40 @@ body::after{content:'';position:fixed;inset:0;z-index:1;pointer-events:none;
 .photo-item.float{animation:photoFloat 4s ease-in-out infinite;}
 .photo-item.fly{transform:scale(5) !important;opacity:0 !important;
   transition:transform .8s cubic-bezier(.3,0,.7,1),opacity .6s ease !important;pointer-events:none;z-index:40;}
+#ph15.fly{transform:scale(2.5) !important;transition:transform 1.2s ease,opacity 1s ease .2s !important;}
 .photo-item img{width:100%;height:100%;object-fit:cover;display:block;}
 @keyframes photoFloat{0%,100%{transform:scale(1) rotate(var(--rot,0deg)) translateY(0)}
   50%{transform:scale(1) rotate(var(--rot,0deg)) translateY(-4px)}}
 
 /* love on photos */
 .photo-love{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-  background:rgba(0,0,0,.35);backdrop-filter:blur(1px);
+  background:rgba(0,0,0,.4);
   font-family:'Great Vibes',cursive;font-size:clamp(.7rem,1.8vw,1.3rem);
   color:#fff;text-shadow:0 0 10px rgba(255,45,85,.9),0 0 20px rgba(255,45,85,.5);
   opacity:0;animation:fadeIn .5s ease forwards;}
 
-/* blurred love fill */
+/* love fill inside heart */
 .heart-love-fill{position:absolute;font-family:'Great Vibes',cursive;color:#ff2d55;white-space:nowrap;
   pointer-events:none;z-index:4;opacity:0;
-  text-shadow:0 0 20px rgba(255,45,85,.8),0 0 40px rgba(255,45,85,.4);
+  text-shadow:0 0 8px rgba(255,45,85,.9),0 0 25px rgba(255,45,85,.5),0 0 45px rgba(255,45,85,.2);
   animation:loveFillCycle 2.5s ease forwards;}
 @keyframes loveFillCycle{0%{opacity:0;transform:translate(-50%,-50%) scale(.5)}
-  25%{opacity:.8;transform:translate(-50%,-50%) scale(1)}
+  25%{opacity:.85;transform:translate(-50%,-50%) scale(1)}
   75%{opacity:.7;transform:translate(-50%,-50%) scale(1.05)}
   100%{opacity:0;transform:translate(-50%,-50%) scale(1.15)}}
+
+/* big center message after photos */
+#heart-center-msg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  z-index:5;pointer-events:none;}
+#heart-center-msg::before{content:'';position:absolute;width:80%;height:50%;
+  background:radial-gradient(ellipse,rgba(8,0,16,.85) 0%,rgba(8,0,16,.4) 50%,transparent 75%);
+  border-radius:50%;opacity:0;transition:opacity 1.2s ease;}
+#heart-center-msg.active::before{opacity:1;}
+#heart-center-msg span{font-family:'Great Vibes',cursive;font-size:clamp(3rem,9vw,6rem);
+  color:#fff;opacity:0;position:relative;
+  text-shadow:0 0 15px rgba(255,45,85,1),0 0 40px rgba(255,45,85,.7),0 0 80px rgba(255,45,85,.3);
+  transition:opacity 1s ease;}
+#heart-center-msg span.show{opacity:1;}
 
 /* neon from heart */
 .neon-love{position:fixed;font-family:'Great Vibes',cursive;pointer-events:none;z-index:25;
@@ -171,6 +185,7 @@ body::after{content:'';position:fixed;inset:0;z-index:1;pointer-events:none;
 <section class="screen hidden" id="main-screen">
   <div id="heart-wrap">
     <div id="heart-texts"></div>
+    <div id="heart-center-msg"><span></span></div>
     <div id="photo-container" style="clip-path:url(#heartClip)"></div>
   </div>
 </section>
@@ -194,7 +209,7 @@ body::after{content:'';position:fixed;inset:0;z-index:1;pointer-events:none;
 </section>
 
 <script>
-const HEART_N=48, HT_START=3200, HT_INT=140;
+const HEART_N=48, HT_START=3500, HT_INT=140;
 const PH_START=9500, PH_INT=400, PH15_EXTRA=0;
 const LOVE_PH=17000, FIN_START=20000, TXT_START=30000, REP_START=52000;
 
@@ -214,12 +229,18 @@ const PL=[
   {l:60,t:55,w:18,h:13,r:-2},   // 12
   {l:31,t:65,w:16,h:11,r:1},    // 13
   {l:53,t:65,w:16,h:11,r:-1},   // 14
-  {l:28,t:33,w:44,h:28,r:0},    // 15
+  {l:31,t:35,w:36,h:22,r:0},    // 15
 ];
 
 let on=false;const music=document.getElementById('music');
 const T=[],I=[];
 function s(fn,d){T.push(setTimeout(fn,d));}
+
+// performance tier
+const isMob=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+const isWeak=isMob||innerWidth<1200;
+const MAX_PTS=isMob?80:isWeak?120:200;
+const P=isMob?.35:isWeak?.6:1; // perf multiplier
 
 /* ═══ PARTICLES ═══ */
 const cvs=document.getElementById('particles'),ctx=cvs.getContext('2d');
@@ -238,33 +259,35 @@ let _rzT;addEventListener('resize',()=>{clearTimeout(_rzT);_rzT=setTimeout(()=>{
   });}
 },250);});
 document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;});
-document.addEventListener('click',e=>{if(!on)return;for(let i=0;i<10;i++)ap('heart',e.clientX+(Math.random()-.5)*50,e.clientY+(Math.random()-.5)*50);});
+document.addEventListener('click',e=>{if(!on)return;
+  const n=Math.ceil(6*P);
+  for(let i=0;i<n;i++)ap('heart',e.clientX+(Math.random()-.5)*50,e.clientY+(Math.random()-.5)*50);});
 
-function ap(t,x,y){pts.push({t,x:x??Math.random()*cvs.width,y:y??(cvs.height+20),
+function ap(t,x,y){if(pts.length>=MAX_PTS)return;
+  pts.push({t,x:x??Math.random()*cvs.width,y:y??(cvs.height+20),
   vx:(Math.random()-.5)*(t==='sparkle'?3:1.2),vy:t==='heart'?-(Math.random()*1.5+.5):-(Math.random()*2.5+.5),
   sz:t==='heart'?Math.random()*7+4:Math.random()*2.5+1,
   op:Math.random()*.5+.3,rot:Math.random()*6.28,rs:(Math.random()-.5)*.04,
-  life:1,decay:t==='heart'?.0012+Math.random()*.002:.008+Math.random()*.008,
+  life:1,decay:t==='heart'?.002+Math.random()*.003:.01+Math.random()*.01,
   hue:Math.random()*60+320});}
 
 let spkOn=false,spkR=0;
 function tick(){
   ctx.clearRect(0,0,cvs.width,cvs.height);
-  if(Math.random()<.06)ap('heart');
-  if(spkOn&&Math.random()<spkR)ap('sparkle',Math.random()*cvs.width,Math.random()*cvs.height);
-  if(on&&Math.random()<.3)ap('sparkle',mx+(Math.random()-.5)*25,my+(Math.random()-.5)*25);
+  if(Math.random()<.04*P)ap('heart');
+  if(spkOn&&Math.random()<spkR*P)ap('sparkle',Math.random()*cvs.width,Math.random()*cvs.height);
+  if(on&&!isMob&&Math.random()<.25)ap('sparkle',mx+(Math.random()-.5)*25,my+(Math.random()-.5)*25);
   for(let i=pts.length-1;i>=0;i--){
     const p=pts[i];p.x+=p.vx;p.y+=p.vy;p.rot+=p.rs;p.life-=p.decay;p.vx+=(Math.random()-.5)*.08;
     if(p.life<=0||p.y<-30){pts.splice(i,1);continue;}
-    ctx.save();
+    ctx.save();ctx.globalAlpha=p.op*p.life;
     if(p.t==='heart'){
       ctx.translate(p.x,p.y);ctx.rotate(p.rot);const sc=p.sz/15;ctx.scale(sc,sc);
       ctx.beginPath();ctx.moveTo(0,-4);ctx.bezierCurveTo(-8,-14,-18,-4,0,10);
       ctx.moveTo(0,-4);ctx.bezierCurveTo(8,-14,18,-4,0,10);
-      ctx.fillStyle=`hsla(${p.hue},80%,65%,${p.op*p.life*.8})`;ctx.fill();
+      ctx.fillStyle=`hsla(${p.hue},80%,65%,1)`;ctx.fill();
     }else{
-      ctx.globalAlpha=p.op*p.life;ctx.fillStyle=`hsla(${p.hue},100%,75%,1)`;
-      ctx.shadowBlur=12;ctx.shadowColor=ctx.fillStyle;
+      ctx.fillStyle=`hsla(${p.hue},100%,75%,1)`;
       ctx.beginPath();ctx.arc(p.x,p.y,p.sz,0,6.28);ctx.fill();
     }
     ctx.restore();
@@ -425,11 +448,11 @@ function go(){
   // 20s: FINALE EFFECTS
   s(()=>{
     const hw=document.getElementById('heart-wrap');let ph=0;
-    const pi=setInterval(()=>{ph+=.012;hw.style.transform=`scale(${1+Math.sin(ph)*.05})`;},16);I.push(pi);
+    const pi=setInterval(()=>{ph+=.012;hw.style.transform=`scale(${1+Math.sin(ph)*.05})`;},32);I.push(pi);
     document.getElementById('glow').classList.add('show');
     spkOn=true;spkR=.3;
-    const ni=setInterval(neon,160);I.push(ni);
-    const pI=setInterval(petal,220);I.push(pI);
+    const ni=setInterval(neon,Math.round(160/P));I.push(ni);
+    const pI=setInterval(petal,Math.round(300/P));I.push(pI);
   },FIN_START);
 
   // 22s: color wave on heart texts
@@ -437,6 +460,29 @@ function go(){
     const els=document.querySelectorAll('.heart-text.show');
     els.forEach((e,i)=>{e.style.animationDelay=(i*.08)+'s';e.classList.add('wave');});
   },22000);
+
+  // 22s: BIG CENTER MESSAGE cycling
+  let _msgI;
+  s(()=>{
+    const ct=document.getElementById('heart-center-msg');
+    const sp=ct.querySelector('span');
+    const msgs=['I Love You','You\'re My World','Forever Yours','♥'];
+    ct.classList.add('active');
+    sp.textContent=msgs[0];sp.classList.add('show');
+    let mi=1;
+    _msgI=setInterval(()=>{
+      sp.classList.remove('show');
+      setTimeout(()=>{sp.textContent=msgs[mi%msgs.length];sp.classList.add('show');mi++;},600);
+    },2200);I.push(_msgI);
+  },22000);
+
+  // hide center msg when finale text appears
+  s(()=>{
+    clearInterval(_msgI);
+    const ct=document.getElementById('heart-center-msg');
+    ct.querySelector('span').classList.remove('show');
+    ct.classList.remove('active');
+  },TXT_START);
 
   // 22s: CONTINUOUS LOVE FILL inside heart (appear & disappear)
   s(()=>{
@@ -446,31 +492,30 @@ function go(){
     const fi=setInterval(()=>{
       const el=document.createElement('span');el.className='heart-love-fill';
       el.textContent=ph[Math.floor(Math.random()*ph.length)];
-      const sz=Math.random()*1.6+1.2;
-      const blur=Math.random()*1+.5;
-      // position inside heart using parametric curve check
+      const sz=Math.random()*2+1.5;
       const W=hw.offsetWidth,H=hw.offsetHeight,sc=W/36,cx=W/2,cy=H*.44;
       const t=Math.random()*Math.PI*2;
-      const r=Math.random()*.65+.1;
+      const r=Math.random()*.6+.1;
       const hx=16*Math.pow(Math.sin(t),3)*r,hy=-(13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t))*r;
       const x=cx+hx*sc,y=cy+hy*sc;
-      el.style.cssText=`left:${x}px;top:${y}px;font-size:${sz}rem;filter:blur(${blur}px);`;
+      el.style.cssText=`left:${x}px;top:${y}px;font-size:${sz}rem;`;
       c.appendChild(el);
       setTimeout(()=>el.remove(),2600);
-    },100);I.push(fi);
+    },Math.round(150/P));I.push(fi);
   },22000);
 
   // 24s: glow intensifies + stars
-  s(()=>{document.getElementById('glow').classList.add('intense');stars(50);},24000);
+  s(()=>{document.getElementById('glow').classList.add('intense');stars(Math.round(30*P));},24000);
 
   // 26s: extra sparkle burst
-  s(()=>{spkR=.6;for(let i=0;i<30;i++)ap('sparkle',Math.random()*cvs.width,Math.random()*cvs.height);},26000);
+  s(()=>{spkR=.6;const n=Math.round(20*P);for(let i=0;i<n;i++)ap('sparkle',Math.random()*cvs.width,Math.random()*cvs.height);},26000);
 
-  // 27s: heart particle burst (replaces laggy canvas trace)
+  // 27s: heart particle burst
   s(()=>{
     const cx=cvs.width/2,cy=cvs.height/2;
-    for(let i=0;i<80;i++){
-      const ang=(i/80)*Math.PI*2;
+    const n=Math.round(50*P);
+    for(let i=0;i<n;i++){
+      const ang=(i/n)*Math.PI*2;
       const hx=16*Math.pow(Math.sin(ang),3);
       const hy=-(13*Math.cos(ang)-5*Math.cos(2*ang)-2*Math.cos(3*ang)-Math.cos(4*ang));
       pts.push({t:'heart',x:cx,y:cy,vx:hx*.6,vy:hy*.6,
@@ -492,11 +537,12 @@ function go(){
 
   // 38s: extra sparkle + petal burst + heart particle burst
   s(()=>{
-    for(let i=0;i<50;i++)ap('sparkle',Math.random()*cvs.width,Math.random()*cvs.height);
-    for(let i=0;i<12;i++)petal();
+    const sn=Math.round(30*P);for(let i=0;i<sn;i++)ap('sparkle',Math.random()*cvs.width,Math.random()*cvs.height);
+    const pn=Math.round(8*P);for(let i=0;i<pn;i++)petal();
     const cx=cvs.width/2,cy=cvs.height/2;
-    for(let i=0;i<30;i++){
-      const ang=(i/30)*Math.PI*2;
+    const n=Math.round(20*P);
+    for(let i=0;i<n;i++){
+      const ang=(i/n)*Math.PI*2;
       const hx=16*Math.pow(Math.sin(ang),3);
       const hy=-(13*Math.cos(ang)-5*Math.cos(2*ang)-2*Math.cos(3*ang)-Math.cos(4*ang));
       pts.push({t:'heart',x:cx,y:cy,vx:hx*1,vy:hy*1,
@@ -507,8 +553,8 @@ function go(){
 
   // 44s: another burst
   s(()=>{
-    for(let i=0;i<40;i++)ap('sparkle',Math.random()*cvs.width,Math.random()*cvs.height);
-    for(let i=0;i<10;i++)petal();
+    const n=Math.round(25*P);for(let i=0;i<n;i++)ap('sparkle',Math.random()*cvs.width,Math.random()*cvs.height);
+    const pn=Math.round(6*P);for(let i=0;i<pn;i++)petal();
   },44000);
 
   // 48s: dim sparkles
@@ -539,6 +585,8 @@ function restart(){
   I.forEach(i=>clearInterval(i));I.length=0;
   on=false;spkOn=false;spkR=0;music.pause();music.currentTime=0;music.volume=1;pts=[];
   document.getElementById('heart-texts').innerHTML='';
+  document.querySelector('#heart-center-msg span').className='';
+  document.getElementById('heart-center-msg').classList.remove('active');
   document.getElementById('photo-container').innerHTML='';
   document.querySelectorAll('.petal,.neon-love,.twinkle').forEach(e=>e.remove());
   document.querySelector('.draw-heart')?.classList.remove('animate');
